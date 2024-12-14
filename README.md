@@ -144,6 +144,7 @@ parking-control/
 │   │   │               ├── configs/
 │   │   │               ├── controllers/
 │   │   │               ├── dtos/
+│   │   │               ├── exceptions/          
 │   │   │               ├── models/
 │   │   │               ├── repositories/
 │   │   │               └── services/
