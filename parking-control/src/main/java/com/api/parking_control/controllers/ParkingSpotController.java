@@ -1,6 +1,10 @@
 package com.api.parking_control.controllers;
 
 import com.api.parking_control.dtos.ParkingSpotDto;
+import com.api.parking_control.exceptions.ApartmentBlockConflictException;
+import com.api.parking_control.exceptions.LicensePlateAlreadyInUseException;
+import com.api.parking_control.exceptions.ParkingSpotNotFoundException;
+import com.api.parking_control.exceptions.ParkingSpotNumberAlreadyInUseException;
 import com.api.parking_control.models.ParkingSpotModel;
 import com.api.parking_control.services.ParkingSpotService;
 import jakarta.validation.Valid;
@@ -32,13 +36,13 @@ public class ParkingSpotController {
     @PostMapping
     public ResponseEntity<Object> saveParkingSpot(@RequestBody @Valid ParkingSpotDto parkingSpotDto){
         if(parkingSpotService.existsByLicensePlateCar(parkingSpotDto.licensePlateCar())){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Conflict: License Plate Car is already in use!");
+            throw new LicensePlateAlreadyInUseException("Conflict: License Plate Car is already in use!");
         }
         if(parkingSpotService.existsByParkingSpotNumber(parkingSpotDto.parkingSpotNumber())){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Conflict: Parking Spot is already in use!");
+            throw new ParkingSpotNumberAlreadyInUseException("Conflict: Parking Spot is already in use!");
         }
         if(parkingSpotService.existsByApartmentAndBlock(parkingSpotDto.apartment(), parkingSpotDto.block())){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Conflict: Parking Spot already registered for this apartment/block!");
+            throw new ApartmentBlockConflictException("Conflict: Parking Spot already registered for this apartment/block!");
         }
         var parkingSpotModel = new ParkingSpotModel();
         BeanUtils.copyProperties(parkingSpotDto, parkingSpotModel);
@@ -47,7 +51,7 @@ public class ParkingSpotController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<ParkingSpotModel>> getAllParkingSpots(@PageableDefault (page = 0, size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable){
+    public ResponseEntity<Page<ParkingSpotModel>> getAllParkingSpots(@PageableDefault (sort = "id", direction = Sort.Direction.ASC) Pageable pageable){
         return ResponseEntity.status(HttpStatus.OK).body(parkingSpotService.findAll(pageable));
     }
 
@@ -55,7 +59,7 @@ public class ParkingSpotController {
     public ResponseEntity<Object> getOneParkingSpot(@PathVariable(value = "id") UUID id){
         Optional<ParkingSpotModel> parkingSpotModelOptional = parkingSpotService.findById(id);
         if(parkingSpotModelOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Parking Spot not found.");
+            throw new ParkingSpotNotFoundException("Parking Spot not found.");
         }
         return ResponseEntity.status(HttpStatus.OK).body(parkingSpotModelOptional.get());
     }
@@ -64,7 +68,7 @@ public class ParkingSpotController {
     public ResponseEntity<Object> deleteParkingSpot(@PathVariable(value = "id") UUID id){
         Optional<ParkingSpotModel> parkingSpotModelOptional = parkingSpotService.findById(id);
         if (parkingSpotModelOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Parking Spot not found.");
+            throw new ParkingSpotNotFoundException("Parking Spot not found.");
         }
         parkingSpotService.delete(parkingSpotModelOptional.get());
         return ResponseEntity.status(HttpStatus.OK).body("Parking Spot deleted successfully.");
@@ -75,7 +79,7 @@ public class ParkingSpotController {
                                                     @RequestBody @Valid ParkingSpotDto parkingSpotDto){
         Optional<ParkingSpotModel> parkingSpotModelOptional = parkingSpotService.findById(id);
         if (parkingSpotModelOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Parking Spot not found.");
+            throw new ParkingSpotNotFoundException("Parking Spot not found.");
         }
         var parkingSpotModel = parkingSpotModelOptional.get();
         BeanUtils.copyProperties(parkingSpotDto,parkingSpotModel);
